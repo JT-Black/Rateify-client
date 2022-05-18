@@ -98,13 +98,82 @@ We started by breaking the tasks down and putting them on a Trello board. While 
 
 ## Featured Code Snippets
 ### Front End
+The home page with carousels:
+```
+const Home = () => {
+  const [releases, setReleases] = React.useState(null);
 
+  React.useEffect(() => {
+    const getData = async () => {
+      try {
+        const data = await getAllReleases();
+        setReleases(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    getData();
+  }, []);
 
+  return (
+    <>
+      <section className="hero is-fullheight-with-navbar has-background-dark">
+        <h1 className="rateify title has-text-centered has-text-white mt-6">
+          Rateify
+        </h1>
 
+        <div className="container">
+          <h2 className="has-text-centered has-text-white mt-4 mb-5 is-size-4">
+            {' '}
+            Recently Added Releases{' '}
+          </h2>
+          {releases && <CarouselLatest releases={releases} />}
+        </div>
 
+        <div className="container">
+          <h2 className="has-text-centered has-text-white mt-4 mb-5 is-size-4">
+            {' '}
+            Highest Rated Releases{' '}
+          </h2>
+          {releases && <CarouselGreatest releases={releases} />}
+        </div>
+      </section>
+    </>
+  );
+};
+```
 ### Back End
+The JWT authentification for logged in user:
+```
+async function loginUser(req, res, next) {
+  try {
+    // ! Get the user from the database, and grab its hash.
+    const user = await User.findOne({ email: req.body.email });
+    // ! If there's no user
+    if (!user) {
+      return res.status(404).json({ message: 'Unauthorized, user not found' });
+    }
+    // ! Checks against the hashed pw in db, that its correct
+    const isValidPw = user.validatePassword(req.body.password);
 
+    if (!isValidPw) {
+      return res
+        .status(404)
+        .json({ message: 'Unauthorized, passwords do not match' });
+    }
 
+    const token = jwt.sign(
+      { userId: user._id, isAdmin: user.isAdmin }, // payload on our token
+      secret, // the secret that only the developer knows
+      { expiresIn: '240h' } // token expires in 240 hours
+    );
+
+    return res.status(202).send({ token, message: 'Login successful!' });
+  } catch (e) {
+    next(e);
+  }
+}
+```
 
 ## Challenges and Wins
 Adding releases currently requires using a spotify link. An unsolved issue we had was a better way to add releases that would validate in the back end, unfortunately, we ran out of time. We wanted to add an average star rating and reviews section as well, however the time constraint limited what we were able to add with our deadline. We were able to add carousels on the homepage for a win.
